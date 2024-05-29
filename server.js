@@ -8,7 +8,7 @@ app.use(express.json());
 const db = mysql.createConnection({
     host: process.env.MARIADB_HOST || '127.0.0.1',
     user: process.env.MARIADB_USER || 'root',
-    password: process.env.MARIADB_PASSWORD || 'Ranemat19',
+    password: process.env.MARIADB_PASSWORD || 'Ranemat19@',
     database: process.env.MARIADB_DATABASE || 'restaurantdb',
 });
 
