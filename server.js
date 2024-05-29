@@ -1,140 +1,123 @@
 const express = require('express');
 const mysql = require('mysql');
-const dotenv = require('dotenv');
-
-// Load environment variables from .env file
-dotenv.config();
+const bodyParser = require('body-parser');
+const fs = require('fs');
+require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 8080;
 
-const jsonData = [
-  {
-    "restaurant_name": "جوي كافيه",
-    "description": "كافيه و مطعم جميل و رايق. الأسعار تعتبر مرتفعه و الويكند زحمه. فطورهم روعة و السعر متوسط و مرتفع. جلسات داخلية و خارجية. واجهة الرياض و فيه فرع في ذا زون.",
-    "location": "https://goo.gl/maps/46vRF9dAURW5vNrh6"
-},
-{
-    "restaurant_name": "جوي زون",
-    "description": "ألعاب حركية والكترونية وكهربائية. يوجد مطعم وقاعة للحفلات. الصحافة.",
-    "location": "https://goo.gl/maps/GmiXVjGmQeP8a7qy9"
-},
-{
-    "restaurant_name": "فرن الضيعة",
-    "description": "يقدم أطباق متنوعة من البيتزا والفطائر. تقديم طلبات التوصيل.",
-    "location": "https://goo.gl/maps/M1ZvPPxAxeA2"
-},
-{
-    "restaurant_name": "شوروز جوي",
-    "description": "يقدم شوروز جوي شوروز جوي اذا ما جربت الشوروز هذي الفرصة انك تزور تشوروك كافيه و تطلبه من عندهم حاجة خيالية وفي الدماغ. تقييم الزوار ممتاز ٤.٦/٥.",
-    "location": "https://goo.gl/maps/yJ3cqYRr1WQWBCmR7"
-},
-{
-    "restaurant_name": "جوي اند جوس",
-    "description": "قادم من لندن ونيويورك. يقدم أطباق فرنسية لذيذة.",
-    "location": "https://goo.gl/maps/syVDCgbRMhRBjXty5"
-},
-{
-    "restaurant_name": "جوي زون",
-    "description": "ألعاب حركية والكترونية وكهربائية. يوجد مطعم وقاعة للحفلات. الصحافة.",
-    "location": "https://goo.gl/maps/GmiXVjGmQeP8a7qy9"
-},
-{
-    "restaurant_name": "جوي كافيه",
-    "description": "كافيه و مطعم جميل و رايق 👌🏼 الأسعار تعتبر مرتفعه و الويكند زحمه فطورهم روعة و السعر متوسط و مرتفع جلسات داخلية و خارجية 🛋🪑 واجهة الرياض و فيه فرع في ذا زون 📍",
-    "location": "https://goo.gl/maps/3eLzCj9mXB4yFeWc8"
-},
-{
-    "restaurant_name": "جوي زون",
-    "description": "ألعاب حركية والكترونية وكهربائية🎠 يوجد مطعم وقاعة للحفلات🎈",
-    "location": "https://goo.gl/maps/GmiXVjGmQeP8a7qy9"
-},
-{
-    "restaurant_name": "Meem Cafe",
-    "description": "Meem Cafe is pleased to offer a variety of delicious dishes and beverages in Riyadh. Enjoy our cozy ambiance and excellent service while indulging in our menu, which includes a range of coffees, teas, sandwiches, salads, and desserts. Visit us for a delightful dining experience!",
-    "location": "https://goo.gl/maps/sJT6eF7LVnGG7aYA8"
-},
-{
-    "name": "Joy Cafe",
-    "description": "Joy Cafe offers indoor and outdoor seating with outdoor seats overlooking a beautiful fountain. Their menu is diverse with many options, and their service is excellent. The place tends to be crowded.",
-    "location": "https://goo.gl/maps/b4MKrDAAH7R2"
-},
-{
-    "name": "Meem Cafe",
-    "description": "Meem Cafe is a cozy spot in Riyadh. They provide great service and have a diverse menu. It's worth a visit, especially for breakfast.",
-    "location": "https://goo.gl/maps/sJT6eF7LVnGG7aYA8"
-},
-{
-    "restaurant_name": "جوي كافيه ☕️",
-    "description": "كافيه و مطعم جميل و رايق 👌🏼 الأسعار تعتبر مرتفعه و الويكند زحمه فطورهم روعة و السعر متوسط و مرتفع جلسات داخلية و خارجية 🛋🪑 واجهة الرياض و فيه فرع في ذا زون 📍",
-    "location": "https://goo.gl/maps/3eLzCj9mXB4yFeWc8"
-},
-{
-    "restaurant_name": "ديب اند جوي",
-    "description": "مطعم متخصص في الوجبات السريعة والمأكولات البحرية.",
-    "location": "https://goo.gl/maps/ey6A8RQsJqGJU9dC6",
-    "sponsor_name": "موبايلي"
-},
-{
-    "restaurant_name": "مقهى المسافر",
-    "description": "مقهى مميز يقدم القهوة والوجبات الخفيفة في أجواء مريحة وممتعة. يعتبر مكانًا مثاليًا للاستمتاع بالأجواء الرياضية ومتابعة المباريات.",
-    "location": "https://goo.gl/maps/1RRQ3pNvLQmqrbkG8"
-}];
+// Load JSON data
+const jsonData = JSON.parse(fs.readFileSync('restaurants.json', 'utf8'));
 
-// MySQL connection
-const connection = mysql.createConnection({
+app.use(bodyParser.json());
+
+// MySQL configuration
+const db = mysql.createConnection({
   host: process.env.MYSQL_HOST,
   user: process.env.MYSQL_USER,
   password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE
+  database: process.env.MYSQL_DATABASE,
 });
 
-connection.connect((err) => {
+// Connect to MySQL
+db.connect((err) => {
   if (err) {
     console.error('Error connecting to MySQL:', err);
     return;
   }
   console.log('Connected to MySQL');
-  
-  // Create restaurants table if not exists
-  const createTableQuery = `
-  CREATE TABLE IF NOT EXISTS restaurants (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    restaurant_name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    location VARCHAR(255) NOT NULL
-  )
-  `;
-
-  connection.query(createTableQuery, (err, results) => {
-    if (err) {
-      console.error('Error creating table:', err);
-      return;
-    }
-    console.log('Table created or already exists');
-
-    // Insert JSON data into the table
-    jsonData.forEach((restaurant) => {
-      const insertQuery = 'INSERT INTO restaurants (restaurant_name, description, location) VALUES (?, ?, ?)';
-      connection.query(insertQuery, [restaurant.restaurant_name, restaurant.description, restaurant.location], (err, results) => {
-        if (err) {
-          console.error('Error inserting data:', err);
-          return;
-        }
-        console.log('Data inserted for', restaurant.restaurant_name);
-      });
-    });
-  });
 });
 
+// Default route
+app.get('/', (req, res) => {
+  res.send('Welcome to the QKSA API!');
+});
+
+// Route to get JSON data
+app.get('/jsonData', (req, res) => {
+  res.json(jsonData);
+});
+
+// API route to get all restaurants
 app.get('/restaurants', (req, res) => {
-  connection.query('SELECT * FROM restaurants', (err, results) => {
+  const sql = 'SELECT * FROM restaurants';
+  db.query(sql, (err, results) => {
     if (err) {
       console.error('Error fetching data:', err);
       res.status(500).send('Server error');
       return;
     }
     res.json(results);
+  });
+});
+
+// API route to get a specific restaurant by ID
+app.get('/restaurants/:id', (req, res) => {
+  const { id } = req.params;
+  const sql = 'SELECT * FROM restaurants WHERE id = ?';
+  db.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error('Error fetching data:', err);
+      res.status(500).send('Server error');
+      return;
+    }
+    if (results.length === 0) {
+      res.status(404).send('Restaurant not found');
+      return;
+    }
+    res.json(results[0]);
+  });
+});
+
+// API route to create a new restaurant
+app.post('/restaurants', (req, res) => {
+  const { name, location, cuisine } = req.body;
+  const sql = 'INSERT INTO restaurants (name, location, cuisine) VALUES (?, ?, ?)';
+  db.query(sql, [name, location, cuisine], (err, result) => {
+    if (err) {
+      console.error('Error inserting data:', err);
+      res.status(500).send('Server error');
+      return;
+    }
+    res.status(201).json({ id: result.insertId, name, location, cuisine });
+  });
+});
+
+// API route to update a restaurant by ID
+app.put('/restaurants/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, location, cuisine } = req.body;
+  const sql = 'UPDATE restaurants SET name = ?, location = ?, cuisine = ? WHERE id = ?';
+  db.query(sql, [name, location, cuisine, id], (err, result) => {
+    if (err) {
+      console.error('Error updating data:', err);
+      res.status(500).send('Server error');
+      return;
+    }
+    if (result.affectedRows === 0) {
+      res.status(404).send('Restaurant not found');
+      return;
+    }
+    res.status(200).json({ id, name, location, cuisine });
+  });
+});
+
+// API route to delete a restaurant by ID
+app.delete('/restaurants/:id', (req, res) => {
+  const { id } = req.params;
+  const sql = 'DELETE FROM restaurants WHERE id = ?';
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting data:', err);
+      res.status(500).send('Server error');
+      return;
+    }
+    if (result.affectedRows === 0) {
+      res.status(404).send('Restaurant not found');
+      return;
+    }
+    res.status(204).send();
   });
 });
 
