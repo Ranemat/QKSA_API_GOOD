@@ -79,8 +79,7 @@ const jsonData = [
     "restaurant_name": "مقهى المسافر",
     "description": "مقهى مميز يقدم القهوة والوجبات الخفيفة في أجواء مريحة وممتعة. يعتبر مكانًا مثاليًا للاستمتاع بالأجواء الرياضية ومتابعة المباريات.",
     "location": "https://goo.gl/maps/1RRQ3pNvLQmqrbkG8"
-}
-];
+}];
 
 // MySQL connection
 const connection = mysql.createConnection({
@@ -91,37 +90,50 @@ const connection = mysql.createConnection({
 });
 
 connection.connect((err) => {
-  if (err) throw err;
+  if (err) {
+    console.error('Error connecting to MySQL:', err);
+    return;
+  }
   console.log('Connected to MySQL');
-});
+  
+  // Create restaurants table if not exists
+  const createTableQuery = `
+  CREATE TABLE IF NOT EXISTS restaurants (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    restaurant_name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    location VARCHAR(255) NOT NULL
+  )
+  `;
 
-// Create restaurants table if not exists
-const createTableQuery = `
-CREATE TABLE IF NOT EXISTS restaurants (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  restaurant_name VARCHAR(255) NOT NULL,
-  description TEXT NOT NULL,
-  location VARCHAR(255) NOT NULL
-)
-`;
+  connection.query(createTableQuery, (err, results) => {
+    if (err) {
+      console.error('Error creating table:', err);
+      return;
+    }
+    console.log('Table created or already exists');
 
-connection.query(createTableQuery, (err, results) => {
-  if (err) throw err;
-  console.log('Table created or already exists');
-
-  // Insert JSON data into the table
-  jsonData.forEach((restaurant) => {
-    const insertQuery = 'INSERT INTO restaurants (restaurant_name, description, location) VALUES (?, ?, ?)';
-    connection.query(insertQuery, [restaurant.restaurant_name, restaurant.description, restaurant.location], (err, results) => {
-      if (err) throw err;
-      console.log('Data inserted');
+    // Insert JSON data into the table
+    jsonData.forEach((restaurant) => {
+      const insertQuery = 'INSERT INTO restaurants (restaurant_name, description, location) VALUES (?, ?, ?)';
+      connection.query(insertQuery, [restaurant.restaurant_name, restaurant.description, restaurant.location], (err, results) => {
+        if (err) {
+          console.error('Error inserting data:', err);
+          return;
+        }
+        console.log('Data inserted for', restaurant.restaurant_name);
+      });
     });
   });
 });
 
 app.get('/restaurants', (req, res) => {
   connection.query('SELECT * FROM restaurants', (err, results) => {
-    if (err) throw err;
+    if (err) {
+      console.error('Error fetching data:', err);
+      res.status(500).send('Server error');
+      return;
+    }
     res.json(results);
   });
 });
