@@ -38,6 +38,17 @@ app.get('/restaurants', (req, res) => {
     });
 });
 
+// نقطة نهاية لاختبار الاتصال بقاعدة البيانات
+app.get('/testdb', (req, res) => {
+    db.query('SELECT 1 + 1 AS solution', (err, results, fields) => {
+        if (err) {
+            res.status(500).send('Error connecting to the database');
+            return;
+        }
+        res.json({ message: 'Database connection is working!', solution: results[0].solution });
+    });
+});
+
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
 });
