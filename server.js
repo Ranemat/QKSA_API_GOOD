@@ -5,11 +5,13 @@ const port = process.env.PORT || 8080;
 
 app.use(express.json());
 
+// إعدادات الاتصال بقاعدة البيانات
 const db = mysql.createConnection({
     host: process.env.MARIADB_HOST || '127.0.0.1',
     user: process.env.MARIADB_USER || 'root',
     password: process.env.MARIADB_PASSWORD || 'Ranemat19@',
     database: process.env.MARIADB_DATABASE || 'restaurantdb',
+    charset: 'utf8mb4'
 });
 
 db.connect((err) => {
