@@ -39,6 +39,11 @@ const loadDataToDatabase = () => {
     console.log('Data loaded to the database.');
 };
 
+// نقطة النهاية للترحيب
+app.get('/', (req, res) => {
+    res.send('Welcome to the QKSA API!');
+});
+
 // قراءة جميع المطاعم
 app.get('/restaurants', (req, res) => {
     db.query('SELECT * FROM restaurants', (err, results) => {
