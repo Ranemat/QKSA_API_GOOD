@@ -2,7 +2,7 @@ const express = require('express');
 const mysql = require('mysql');
 const fs = require('fs');
 const app = express();
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
@@ -11,7 +11,8 @@ const db = mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || 'Ranemat19@',
-    database: process.env.DB_NAME || 'restaurantdb'
+    database: process.env.DB_NAME || 'restaurantdb',
+    charset: 'utf8mb4' // Ensure the connection uses utf8mb4
 });
 
 db.connect((err) => {
@@ -20,31 +21,9 @@ db.connect((err) => {
         return;
     }
     console.log('Connected to the database.');
-
-    // تحديث قيم id الحالية وإعادة ضبط العدادة الذاتية
-    db.query('SET @count = 0', (err, result) => {
-        if (err) {
-            console.error('Error setting counter:', err);
-            return;
-        }
-        db.query('UPDATE restaurants SET id = @count:= @count + 1', (err, result) => {
-            if (err) {
-                console.error('Error updating IDs:', err);
-                return;
-            }
-            db.query('ALTER TABLE restaurants AUTO_INCREMENT = 1', (err, result) => {
-                if (err) {
-                    console.error('Error resetting AUTO_INCREMENT:', err);
-                    return;
-                }
-                console.log('IDs updated and AUTO_INCREMENT reset.');
-                loadDataToDatabase(); // تحميل البيانات من ملف JSON إلى قاعدة البيانات عند بدء التشغيل
-            });
-        });
-    });
 });
 
-// تحميل البيانات من ملف JSON إلى قاعدة البيانات
+// Load data from JSON to database on startup
 const loadDataToDatabase = () => {
     const data = fs.readFileSync('./restaurants.json', 'utf8');
     const restaurants = JSON.parse(data);
@@ -57,10 +36,12 @@ const loadDataToDatabase = () => {
                 return;
             }
             if (results.length === 0) {
-                const query = 'INSERT INTO restaurants (restaurant_name, description, location) VALUES (?, ?, ?)';
-                db.query(query, [restaurant.restaurant_name, restaurant.description, restaurant.location], (err, result) => {
+                const query = 'INSERT INTO restaurants (restaurant_name, description, location, rating) VALUES (?, ?, ?, ?)';
+                db.query(query, [restaurant.restaurant_name, restaurant.description, restaurant.location, restaurant.rating], (err, result) => {
                     if (err) {
                         console.error('Error inserting data:', err);
+                        console.error('SQL Query:', query);
+                        console.error('Data:', [restaurant.restaurant_name, restaurant.description, restaurant.location, restaurant.rating]);
                     }
                 });
             } else {
@@ -71,12 +52,23 @@ const loadDataToDatabase = () => {
     console.log('Data loaded to the database.');
 };
 
-// نقطة النهاية للترحيب
+// Test DB connection endpoint
+app.get('/test-db', (req, res) => {
+    db.query('SELECT 1 + 1 AS solution', (err, results) => {
+        if (err) {
+            console.error('Error testing the database connection:', err);
+            res.status(500).send('Database connection failed');
+            return;
+        }
+        res.send(`Database connection successful: ${results[0].solution}`);
+    });
+});
+
+// CRUD Endpoints
 app.get('/', (req, res) => {
     res.send('Welcome to the QKSA API!');
 });
 
-// قراءة جميع المطاعم
 app.get('/restaurants', (req, res) => {
     db.query('SELECT * FROM restaurants', (err, results) => {
         if (err) {
@@ -88,14 +80,13 @@ app.get('/restaurants', (req, res) => {
     });
 });
 
-// إضافة مطعم جديد
 app.post('/restaurants', (req, res) => {
     const newRestaurant = req.body;
     const checkQuery = 'SELECT * FROM restaurants WHERE restaurant_name = ? AND location = ?';
     db.query(checkQuery, [newRestaurant.restaurant_name, newRestaurant.location], (err, results) => {
         if (err) {
             console.error('Error checking data:', err);
-            res.status(500).send('Server error');
+            res.status(500).send('Server error during check');
             return;
         }
         if (results.length > 0) {
@@ -105,7 +96,9 @@ app.post('/restaurants', (req, res) => {
             db.query(query, [newRestaurant.restaurant_name, newRestaurant.description, newRestaurant.location, newRestaurant.rating], (err, result) => {
                 if (err) {
                     console.error('Error inserting data:', err);
-                    res.status(500).send('Server error');
+                    console.error('SQL Query:', query);
+                    console.error('Data:', [newRestaurant.restaurant_name, newRestaurant.description, newRestaurant.location, newRestaurant.rating]);
+                    res.status(500).send('Server error during insertion');
                     return;
                 }
                 res.status(201).json({ id: result.insertId, ...newRestaurant });
@@ -114,7 +107,6 @@ app.post('/restaurants', (req, res) => {
     });
 });
 
-// تحديث مطعم موجود
 app.put('/restaurants/:id', (req, res) => {
     const restaurantId = req.params.id;
     const updatedRestaurant = req.body;
@@ -141,7 +133,6 @@ app.put('/restaurants/:id', (req, res) => {
     });
 });
 
-// حذف مطعم
 app.delete('/restaurants/:id', (req, res) => {
     const restaurantId = req.params.id;
     const query = 'DELETE FROM restaurants WHERE id = ?';
@@ -155,7 +146,6 @@ app.delete('/restaurants/:id', (req, res) => {
     });
 });
 
-// تشغيل الخادم
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
