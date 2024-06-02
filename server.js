@@ -2,16 +2,16 @@ const express = require('express');
 const mysql = require('mysql');
 const fs = require('fs');
 const app = express();
-const port = 8080;
+const port = process.env.PORT || 8080;
 
 app.use(express.json());
 
-// إعداد الاتصال بقاعدة البيانات
+// إعداد الاتصال بقاعدة البيانات باستخدام متغيرات البيئة
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'Ranemat19@',
-    database: 'restaurantdb'
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'Ranemat19@',
+    database: process.env.DB_NAME || 'restaurantdb'
 });
 
 db.connect((err) => {
@@ -20,7 +20,28 @@ db.connect((err) => {
         return;
     }
     console.log('Connected to the database.');
-    loadDataToDatabase(); // تحميل البيانات من ملف JSON إلى قاعدة البيانات عند بدء التشغيل
+
+    // تحديث قيم id الحالية وإعادة ضبط العدادة الذاتية
+    db.query('SET @count = 0', (err, result) => {
+        if (err) {
+            console.error('Error setting counter:', err);
+            return;
+        }
+        db.query('UPDATE restaurants SET id = @count:= @count + 1', (err, result) => {
+            if (err) {
+                console.error('Error updating IDs:', err);
+                return;
+            }
+            db.query('ALTER TABLE restaurants AUTO_INCREMENT = 1', (err, result) => {
+                if (err) {
+                    console.error('Error resetting AUTO_INCREMENT:', err);
+                    return;
+                }
+                console.log('IDs updated and AUTO_INCREMENT reset.');
+                loadDataToDatabase(); // تحميل البيانات من ملف JSON إلى قاعدة البيانات عند بدء التشغيل
+            });
+        });
+    });
 });
 
 // تحميل البيانات من ملف JSON إلى قاعدة البيانات
