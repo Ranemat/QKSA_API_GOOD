@@ -29,10 +29,21 @@ const loadDataToDatabase = () => {
     const restaurants = JSON.parse(data);
 
     restaurants.forEach(restaurant => {
-        const query = 'INSERT INTO restaurants (restaurant_name, description, location) VALUES (?, ?, ?)';
-        db.query(query, [restaurant.restaurant_name, restaurant.description, restaurant.location], (err, result) => {
+        const checkQuery = 'SELECT * FROM restaurants WHERE restaurant_name = ? AND location = ?';
+        db.query(checkQuery, [restaurant.restaurant_name, restaurant.location], (err, results) => {
             if (err) {
-                console.error('Error inserting data:', err);
+                console.error('Error checking data:', err);
+                return;
+            }
+            if (results.length === 0) {
+                const query = 'INSERT INTO restaurants (restaurant_name, description, location) VALUES (?, ?, ?)';
+                db.query(query, [restaurant.restaurant_name, restaurant.description, restaurant.location], (err, result) => {
+                    if (err) {
+                        console.error('Error inserting data:', err);
+                    }
+                });
+            } else {
+                console.log(`Restaurant with name ${restaurant.restaurant_name} and location ${restaurant.location} already exists.`);
             }
         });
     });
@@ -59,14 +70,26 @@ app.get('/restaurants', (req, res) => {
 // إضافة مطعم جديد
 app.post('/restaurants', (req, res) => {
     const newRestaurant = req.body;
-    const query = 'INSERT INTO restaurants (restaurant_name, description, location) VALUES (?, ?, ?)';
-    db.query(query, [newRestaurant.restaurant_name, newRestaurant.description, newRestaurant.location], (err, result) => {
+    const checkQuery = 'SELECT * FROM restaurants WHERE restaurant_name = ? AND location = ?';
+    db.query(checkQuery, [newRestaurant.restaurant_name, newRestaurant.location], (err, results) => {
         if (err) {
-            console.error('Error inserting data:', err);
+            console.error('Error checking data:', err);
             res.status(500).send('Server error');
             return;
         }
-        res.status(201).json({ id: result.insertId, ...newRestaurant });
+        if (results.length > 0) {
+            res.status(400).send('Restaurant with the same name and location already exists');
+        } else {
+            const query = 'INSERT INTO restaurants (restaurant_name, description, location, rating) VALUES (?, ?, ?, ?)';
+            db.query(query, [newRestaurant.restaurant_name, newRestaurant.description, newRestaurant.location, newRestaurant.rating], (err, result) => {
+                if (err) {
+                    console.error('Error inserting data:', err);
+                    res.status(500).send('Server error');
+                    return;
+                }
+                res.status(201).json({ id: result.insertId, ...newRestaurant });
+            });
+        }
     });
 });
 
@@ -74,14 +97,26 @@ app.post('/restaurants', (req, res) => {
 app.put('/restaurants/:id', (req, res) => {
     const restaurantId = req.params.id;
     const updatedRestaurant = req.body;
-    const query = 'UPDATE restaurants SET restaurant_name = ?, description = ?, location = ? WHERE id = ?';
-    db.query(query, [updatedRestaurant.restaurant_name, updatedRestaurant.description, updatedRestaurant.location, restaurantId], (err, result) => {
+    const checkQuery = 'SELECT * FROM restaurants WHERE restaurant_name = ? AND location = ? AND id != ?';
+    db.query(checkQuery, [updatedRestaurant.restaurant_name, updatedRestaurant.location, restaurantId], (err, results) => {
         if (err) {
-            console.error('Error updating data:', err);
+            console.error('Error checking data:', err);
             res.status(500).send('Server error');
             return;
         }
-        res.json({ id: restaurantId, ...updatedRestaurant });
+        if (results.length > 0) {
+            res.status(400).send('Another restaurant with the same name and location already exists');
+        } else {
+            const query = 'UPDATE restaurants SET restaurant_name = ?, description = ?, location = ?, rating = ? WHERE id = ?';
+            db.query(query, [updatedRestaurant.restaurant_name, updatedRestaurant.description, updatedRestaurant.location, updatedRestaurant.rating, restaurantId], (err, result) => {
+                if (err) {
+                    console.error('Error updating data:', err);
+                    res.status(500).send('Server error');
+                    return;
+                }
+                res.json({ id: restaurantId, ...updatedRestaurant });
+            });
+        }
     });
 });
 
