@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql');
 const fs = require('fs');
@@ -6,7 +7,6 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// إعداد الاتصال بقاعدة البيانات باستخدام متغيرات البيئة
 const db = mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
@@ -21,9 +21,10 @@ db.connect((err) => {
         return;
     }
     console.log('Connected to the database.');
+    // Load data into the database on successful connection
+    loadDataToDatabase();
 });
 
-// Load data from JSON to database on startup
 const loadDataToDatabase = () => {
     const data = fs.readFileSync('./restaurants.json', 'utf8');
     const restaurants = JSON.parse(data);
