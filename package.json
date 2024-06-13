@@ -1,13 +1,13 @@
 {
   "name": "qksa-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "��#\u0000 \u0000Q\u0000K\u0000S\u0000A\u0000-\u0000A\u0000P\u0000I\u0000\r\u0000 \u0000",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
+  "author": "ranem",
   "license": "ISC",
   "dependencies": {
     "dotenv": "^16.4.5",
